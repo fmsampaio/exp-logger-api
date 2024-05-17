@@ -1,4 +1,7 @@
-from fastapi import APIRouter
+from fastapi import status, APIRouter, Depends
+
+from ..database import SessionLocal, get_db
+from .. import schemas, models
 
 router = APIRouter(
     tags = ['Log Entries'],
@@ -6,7 +9,19 @@ router = APIRouter(
 )
 
 @router.get('/')
-def list_all():
-    return {
-        'info' : 'List all log entries route is not implemented yet!'
-    }
+def list_all(db: SessionLocal = Depends(get_db)):
+    log_entries = db.query(models.LogEntry).all()
+    return log_entries
+
+@router.post('/', status_code=status.HTTP_201_CREATED)
+def create(request: schemas.LogEntryCreate, db: SessionLocal = Depends(get_db)):
+    newLogEntry = models.LogEntry(
+        experiment_name = request.experiment_name,
+        log_message = request.log_message,
+        log_details = request.log_details
+    )
+    db.add(newLogEntry)
+    db.commit()
+    db.refresh(newLogEntry)
+
+    return newLogEntry
