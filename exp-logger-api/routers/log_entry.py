@@ -1,7 +1,10 @@
+from typing import Optional
 from fastapi import status, APIRouter, Depends
 
 from ..database import SessionLocal, get_db
 from .. import schemas, models
+
+from . import utils
 
 router = APIRouter(
     tags = ['Log Entries'],
@@ -9,8 +12,12 @@ router = APIRouter(
 )
 
 @router.get('/', response_model=list[schemas.LogEntryShow])
-def list_all(db: SessionLocal = Depends(get_db)):
-    log_entries = db.query(models.LogEntry).all()
+def list_all(project: Optional[int] = -1, db: SessionLocal = Depends(get_db)):
+    if project == -1:
+        log_entries = db.query(models.LogEntry).all()
+    else:
+        log_entries = db.query(models.LogEntry).filter(models.LogEntry.project_id == project).all()
+
     return log_entries
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
